@@ -12,6 +12,7 @@
         <div class="header-container">
             <div class="header-title" onclick="app.goHome()">📚 学習記録</div>
             <div class="header-nav">
+                <button class="nav-button" onclick="app.goDashboard()">📊 ダッシュボード</button>
                 <button class="nav-button" onclick="app.goNew()">+ 新規投稿</button>
                 <button class="theme-toggle" onclick="app.toggleTheme()" title="ダークモード切替">🌙</button>
             </div>
@@ -53,6 +54,60 @@
                 <div class="empty-state-icon">📝</div>
                 <div class="empty-state-text">投稿がまだありません。最初の投稿をしてみましょう！</div>
                 <button class="nav-button" onclick="app.goNew()">投稿を作成</button>
+            </div>
+        </div>
+
+        <!-- ダッシュボードページ -->
+        <div id="dashboard" class="page">
+            <div class="dashboard-container">
+                <h1 class="dashboard-title">📊 学習ダッシュボード</h1>
+                <p class="dashboard-subtitle">チームの学習活動を可視化</p>
+
+                <!-- チーム全体の統計 -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">📝</div>
+                        <div class="stat-value" id="totalPosts">0</div>
+                        <div class="stat-label">総投稿数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-value" id="totalUsers">0</div>
+                        <div class="stat-label">投稿者数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💬</div>
+                        <div class="stat-value" id="totalComments">0</div>
+                        <div class="stat-label">総コメント数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">❤️</div>
+                        <div class="stat-value" id="totalLikes">0</div>
+                        <div class="stat-label">総いいね数</div>
+                    </div>
+                </div>
+
+                <!-- 最近の活動 -->
+                <div class="dashboard-section">
+                    <h2 class="section-title">🔥 最近の活動</h2>
+                    <div class="recent-activities" id="recentActivities"></div>
+                </div>
+
+                <!-- 投稿数ランキング -->
+                <div class="dashboard-section">
+                    <h2 class="section-title">🏆 投稿数ランキング TOP 10</h2>
+                    <div class="ranking-list" id="rankingList"></div>
+                </div>
+
+                <!-- 個人別投稿リスト -->
+                <div class="dashboard-section">
+                    <h2 class="section-title">👤 投稿者別一覧</h2>
+                    <div class="authors-grid" id="authorsGrid"></div>
+                </div>
+
+                <div style="margin-top: 2rem;">
+                    <button class="btn btn-secondary" onclick="app.goHome()">← 投稿一覧に戻る</button>
+                </div>
             </div>
         </div>
 
@@ -116,6 +171,7 @@
                                 投稿者: <strong id="detailAuthor" onclick="event.stopPropagation(); app.filterByAuthor(event.target.textContent)"></strong>
                             </div>
                             <div class="post-detail-date" id="detailDate"></div>
+                            <div class="post-detail-views" id="detailViews"></div>
                         </div>
                         <div class="post-detail-actions">
                             <button class="icon-button" id="likeBtn" onclick="app.toggleLike()" title="いいね">❤️</button>
