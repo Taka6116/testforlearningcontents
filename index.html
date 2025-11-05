@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学習記録 - 共有学習投稿アプリ</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- ヘッダー -->
+    <header>
+        <div class="header-container">
+            <div class="header-title" onclick="app.goHome()">📚 学習記録</div>
+            <div class="header-nav">
+                <button class="nav-button" onclick="app.goNew()">+ 新規投稿</button>
+                <button class="theme-toggle" onclick="app.toggleTheme()" title="ダークモード切替">🌙</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ローディング画面 -->
+    <div id="loading" class="loading-screen">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">読み込み中...</p>
+    </div>
+
+    <!-- メインコンテナ -->
+    <div class="container" id="mainContainer" style="display: none;">
+        <!-- ホームページ -->
+        <div id="home" class="page active">
+            <div class="home-header">
+                <h1 class="home-title">投稿一覧</h1>
+                <p class="home-subtitle">学習の成果や気づきをシェアしましょう</p>
+            </div>
+
+            <div class="search-filter">
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    id="searchInput" 
+                    placeholder="タイトルや内容で検索..."
+                    onkeyup="app.handleSearch()"
+                >
+                <button class="filter-button" id="filterAuthorBtn" style="display: none;" onclick="app.clearAuthorFilter()">
+                    作者でフィルタ中 ✕
+                </button>
+            </div>
+
+            <div id="postsList" class="posts-grid"></div>
+            <div id="pagination" class="pagination"></div>
+
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <div class="empty-state-icon">📝</div>
+                <div class="empty-state-text">投稿がまだありません。最初の投稿をしてみましょう！</div>
+                <button class="nav-button" onclick="app.goNew()">投稿を作成</button>
+            </div>
+        </div>
+
+        <!-- 新規投稿ページ -->
+        <div id="new" class="page">
+            <div class="form-container">
+                <h1 class="form-title" id="formTitle">新規投稿</h1>
+                
+                <form id="postForm" onsubmit="app.handleSubmit(event)">
+                    <div class="form-group">
+                        <label class="form-label" for="nameInput">名前 *</label>
+                        <input 
+                            type="text" 
+                            id="nameInput" 
+                            class="form-input" 
+                            placeholder="あなたの名前を入力"
+                            required
+                        >
+                        <div class="form-error" id="nameError"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="titleInput">タイトル（本のタイトルまたは学んだこと） *</label>
+                        <input 
+                            type="text" 
+                            id="titleInput" 
+                            class="form-input" 
+                            placeholder="例：「7つの習慣」を読んで"
+                            required
+                        >
+                        <div class="form-error" id="titleError"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="bodyInput">概要・学び *</label>
+                        <textarea 
+                            id="bodyInput" 
+                            class="form-textarea" 
+                            placeholder="この本から学んだことや、感じたことを自由に書いてください..."
+                            required
+                        ></textarea>
+                        <div class="form-error" id="bodyError"></div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">保存</button>
+                        <button type="button" class="btn btn-secondary" onclick="app.goHome()">キャンセル</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 投稿詳細ページ -->
+        <div id="detail" class="page">
+            <div class="post-detail">
+                <div class="post-detail-header">
+                    <h1 class="post-detail-title" id="detailTitle"></h1>
+                    <div class="post-detail-meta">
+                        <div>
+                            <div class="post-detail-author">
+                                投稿者: <strong id="detailAuthor" onclick="event.stopPropagation(); app.filterByAuthor(event.target.textContent)"></strong>
+                            </div>
+                            <div class="post-detail-date" id="detailDate"></div>
+                        </div>
+                        <div class="post-detail-actions">
+                            <button class="icon-button" id="likeBtn" onclick="app.toggleLike()" title="いいね">❤️</button>
+                            <button class="icon-button" id="editBtn" onclick="app.editPost()" title="編集">✏️</button>
+                            <button class="icon-button" id="deleteBtn" onclick="app.deletePost()" title="削除">🗑️</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="post-detail-body" id="detailBody"></div>
+
+                <!-- コメントセクション -->
+                <div class="comments-section">
+                    <h2 class="comments-title">コメント</h2>
+                    
+                    <div class="comment-form">
+                        <div class="comment-input-group">
+                            <input 
+                                type="text" 
+                                id="commentNameInput" 
+                                placeholder="名前"
+                                maxlength="50"
+                            >
+                        </div>
+                        <textarea 
+                            id="commentBodyInput" 
+                            class="comment-textarea" 
+                            placeholder="コメントを入力..."
+                        ></textarea>
+                        <div class="comment-actions">
+                            <button class="btn btn-primary btn-small" onclick="app.addComment()">コメント送信</button>
+                        </div>
+                    </div>
+
+                    <div id="commentsList" class="comments-list"></div>
+                    <div id="noComments" class="no-comments">コメントはまだありません</div>
+                </div>
+
+                <div style="margin-top: 2rem;">
+                    <button class="btn btn-secondary" onclick="app.goHome()" style="max-width: 200px;">← 戻る</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 削除確認モーダル -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <h2 class="modal-title">投稿を削除しますか？</h2>
+            <p class="modal-text">この操作は取り消せません。本当に削除してもよろしいですか？</p>
+            <div class="modal-actions">
+                <button class="btn btn-danger" onclick="app.confirmDelete()">削除</button>
+                <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <!-- Firebase設定ファイル -->
+    <script src="firebase-config.js"></script>
+    
+    <!-- アプリケーション -->
+    <script src="app.js"></script>
+</body>
+</html>
