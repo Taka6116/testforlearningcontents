@@ -860,4 +860,369 @@ header {
     .modal-content {
         width: 95%;
     }
+
+    /* ダッシュボードスタイル（既存のstyles.cssの末尾に追加してください） */
+
+/* ダッシュボード */
+.dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.dashboard-title {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.dashboard-subtitle {
+    font-size: 16px;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+}
+
+/* 統計カードグリッド */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.stat-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    box-shadow: var(--shadow);
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.stat-icon {
+    font-size: 36px;
+    margin-bottom: 1rem;
+}
+
+.stat-value {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+/* ダッシュボードセクション */
+.dashboard-section {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow);
+}
+
+.section-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* 最近の活動 */
+.recent-activities {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.activity-item {
+    padding: 1rem;
+    background-color: var(--bg-primary);
+    border-radius: 8px;
+    border-left: 3px solid var(--accent);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.2s;
+}
+
+.activity-item:hover {
+    background-color: var(--border);
+}
+
+.activity-content {
+    flex: 1;
+}
+
+.activity-text {
+    font-size: 14px;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.activity-text strong {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.activity-time {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+/* ランキングリスト */
+.ranking-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.ranking-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background-color: var(--bg-primary);
+    border-radius: 8px;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.ranking-item:hover {
+    background-color: var(--border);
+}
+
+.ranking-number {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    min-width: 40px;
+    text-align: center;
+}
+
+.ranking-item:nth-child(1) .ranking-number {
+    color: #FFD700; /* Gold */
+}
+
+.ranking-item:nth-child(2) .ranking-number {
+    color: #C0C0C0; /* Silver */
+}
+
+.ranking-item:nth-child(3) .ranking-number {
+    color: #CD7F32; /* Bronze */
+}
+
+.ranking-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #0052cc);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 18px;
+}
+
+.ranking-info {
+    flex: 1;
+}
+
+.ranking-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.ranking-posts {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.ranking-badge {
+    padding: 0.25rem 0.75rem;
+    background-color: var(--accent);
+    color: white;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* 投稿者グリッド */
+.authors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.author-card {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.author-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--accent);
+}
+
+.author-card-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.author-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #0052cc);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 20px;
+}
+
+.author-info {
+    flex: 1;
+}
+
+.author-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.author-stats {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.author-posts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.author-post-item {
+    font-size: 13px;
+    color: var(--text-primary);
+    padding: 0.5rem;
+    background-color: var(--bg-card);
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s;
+}
+
+.author-post-item:hover {
+    background-color: var(--border);
+}
+
+.author-post-title {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.author-post-date {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-left: 0.5rem;
+}
+
+.author-show-more {
+    margin-top: 0.5rem;
+    text-align: center;
+    font-size: 13px;
+    color: var(--accent);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.author-show-more:hover {
+    background-color: var(--bg-card);
+}
+
+/* 閲覧数表示 */
+.post-detail-views {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .dashboard-title {
+        font-size: 24px;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .stat-card {
+        padding: 1.5rem 1rem;
+    }
+
+    .stat-icon {
+        font-size: 28px;
+    }
+
+    .stat-value {
+        font-size: 28px;
+    }
+
+    .authors-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ranking-number {
+        font-size: 18px;
+        min-width: 30px;
+    }
+
+    .ranking-avatar {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+    }
+
+    .activity-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 }
