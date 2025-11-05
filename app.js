@@ -8,22 +8,18 @@ const app = {
     pageNumber: 1,
     postsPerPage: 9,
     likes: {},
+    views: {},
     data: {
         posts: []
     },
-    // ★★★ データベース参照を格納するプロパティ ★★★
     db: null,
 
     // 初期化
     async init() {
-        // ★★★ 修正済み: グローバルな database 変数を app.db として格納 ★★★
-        // (firebase-config.jsで定義されたグローバル変数 'database' を参照)
         this.db = database;
-        
         this.loadTheme();
         await this.loadData();
         
-        // リアルタイム更新のリスナーを設定
         this.setupRealtimeListeners();
         
         document.getElementById('loading').style.display = 'none';
@@ -35,7 +31,6 @@ const app = {
 
     // リアルタイム更新リスナー
     setupRealtimeListeners() {
-        // 投稿の変更を監視 (database.ref → this.db.ref に変更)
         this.db.ref('posts').on('value', (snapshot) => {
             const posts = [];
             snapshot.forEach((childSnapshot) => {
@@ -51,15 +46,26 @@ const app = {
                 if (currentPost) {
                     this.renderDetail();
                 }
+            } else if (this.currentPage === 'dashboard') {
+                this.renderDashboard();
             }
         });
 
-        // いいねの変更を監視 (database.ref → this.db.ref に変更)
         this.db.ref('likes').on('value', (snapshot) => {
             this.likes = snapshot.val() || {};
             if (this.currentPage === 'home') {
                 this.renderHome();
             } else if (this.currentPage === 'detail') {
+                this.renderDetail();
+            } else if (this.currentPage === 'dashboard') {
+                this.renderDashboard();
+            }
+        });
+
+        // 閲覧数の監視
+        this.db.ref('views').on('value', (snapshot) => {
+            this.views = snapshot.val() || {};
+            if (this.currentPage === 'detail') {
                 this.renderDetail();
             }
         });
@@ -76,6 +82,8 @@ const app = {
             this.goNew();
         } else if (path === 'post' && id) {
             this.goDetail(id);
+        } else if (path === 'dashboard') {
+            this.goDashboard();
         } else {
             this.goHome();
         }
@@ -104,7 +112,24 @@ const app = {
         window.location.hash = `/post/${id}`;
         this.currentPage = 'detail';
         this.currentPostId = id;
+        this.incrementViewCount(id);
         this.render();
+    },
+
+    goDashboard() {
+        window.location.hash = '/dashboard';
+        this.currentPage = 'dashboard';
+        this.render();
+    },
+
+    // 閲覧数をインクリメント
+    async incrementViewCount(postId) {
+        try {
+            const currentViews = this.views[postId] || 0;
+            await this.db.ref('views/' + postId).set(currentViews + 1);
+        } catch (error) {
+            console.error('閲覧数更新エラー:', error);
+        }
     },
 
     // ページ表示
@@ -118,7 +143,198 @@ const app = {
             this.renderDetail();
         } else if (this.currentPage === 'new') {
             this.renderNewForm();
+        } else if (this.currentPage === 'dashboard') {
+            this.renderDashboard();
         }
+    },
+
+    // ダッシュボードレンダリング
+    renderDashboard() {
+        const posts = this.data.posts;
+        
+        // チーム全体の統計
+        const totalPosts = posts.length;
+        const uniqueAuthors = [...new Set(posts.map(p => p.name))];
+        const totalUsers = uniqueAuthors.length;
+        const totalComments = posts.reduce((sum, post) => sum + (post.comments ? post.comments.length : 0), 0);
+        const totalLikes = Object.values(this.likes).reduce((sum, count) => sum + count, 0);
+
+        document.getElementById('totalPosts').textContent = totalPosts;
+        document.getElementById('totalUsers').textContent = totalUsers;
+        document.getElementById('totalComments').textContent = totalComments;
+        document.getElementById('totalLikes').textContent = totalLikes;
+
+        // 最近の活動（最新5件）
+        this.renderRecentActivities(posts.slice(0, 5));
+
+        // 投稿数ランキング
+        this.renderRanking(posts);
+
+        // 投稿者別一覧
+        this.renderAuthorsGrid(posts);
+    },
+
+    // 最近の活動
+    renderRecentActivities(recentPosts) {
+        const container = document.getElementById('recentActivities');
+        container.innerHTML = '';
+
+        if (recentPosts.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">まだ活動がありません</p>';
+            return;
+        }
+
+        recentPosts.forEach(post => {
+            const item = document.createElement('div');
+            item.className = 'activity-item';
+            item.onclick = () => this.goDetail(post.id);
+
+            const timeAgo = this.getTimeAgo(new Date(post.createdAt));
+
+            item.innerHTML = `
+                <div class="activity-content">
+                    <div class="activity-text">
+                        <strong>${this.escapeHtml(post.name)}</strong> が投稿しました: 
+                        「${this.escapeHtml(post.title)}」
+                    </div>
+                    <div class="activity-time">${timeAgo}</div>
+                </div>
+            `;
+
+            container.appendChild(item);
+        });
+    },
+
+    // 投稿数ランキング
+    renderRanking(posts) {
+        const container = document.getElementById('rankingList');
+        container.innerHTML = '';
+
+        // 投稿者ごとに集計
+        const authorStats = {};
+        posts.forEach(post => {
+            if (!authorStats[post.name]) {
+                authorStats[post.name] = {
+                    name: post.name,
+                    postCount: 0,
+                    commentCount: 0,
+                    likeCount: 0
+                };
+            }
+            authorStats[post.name].postCount++;
+            authorStats[post.name].commentCount += post.comments ? post.comments.length : 0;
+            authorStats[post.name].likeCount += this.likes[post.id] || 0;
+        });
+
+        // 投稿数でソート
+        const ranking = Object.values(authorStats).sort((a, b) => b.postCount - a.postCount);
+
+        // TOP 10のみ表示
+        ranking.slice(0, 10).forEach((author, index) => {
+            const item = document.createElement('div');
+            item.className = 'ranking-item';
+            item.onclick = () => this.filterByAuthor(author.name);
+
+            const initial = author.name.charAt(0).toUpperCase();
+
+            item.innerHTML = `
+                <div class="ranking-number">${index + 1}</div>
+                <div class="ranking-avatar">${initial}</div>
+                <div class="ranking-info">
+                    <div class="ranking-name">${this.escapeHtml(author.name)}</div>
+                    <div class="ranking-posts">
+                        📝 ${author.postCount}件の投稿 | 
+                        💬 ${author.commentCount}コメント | 
+                        ❤️ ${author.likeCount}いいね
+                    </div>
+                </div>
+                <div class="ranking-badge">${author.postCount}投稿</div>
+            `;
+
+            container.appendChild(item);
+        });
+
+        if (ranking.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">投稿がまだありません</p>';
+        }
+    },
+
+    // 投稿者別一覧
+    renderAuthorsGrid(posts) {
+        const container = document.getElementById('authorsGrid');
+        container.innerHTML = '';
+
+        // 投稿者ごとにグループ化
+        const authorPosts = {};
+        posts.forEach(post => {
+            if (!authorPosts[post.name]) {
+                authorPosts[post.name] = [];
+            }
+            authorPosts[post.name].push(post);
+        });
+
+        // 投稿数でソート
+        const sortedAuthors = Object.entries(authorPosts).sort((a, b) => b[1].length - a[1].length);
+
+        sortedAuthors.forEach(([authorName, authorPostsList]) => {
+            const card = document.createElement('div');
+            card.className = 'author-card';
+
+            const initial = authorName.charAt(0).toUpperCase();
+            const postCount = authorPostsList.length;
+            const totalComments = authorPostsList.reduce((sum, post) => sum + (post.comments ? post.comments.length : 0), 0);
+            const totalLikes = authorPostsList.reduce((sum, post) => sum + (this.likes[post.id] || 0), 0);
+
+            // 最新3件の投稿を表示
+            const recentPosts = authorPostsList.slice(0, 3);
+            const hasMore = authorPostsList.length > 3;
+
+            card.innerHTML = `
+                <div class="author-card-header">
+                    <div class="author-avatar">${initial}</div>
+                    <div class="author-info">
+                        <div class="author-name">${this.escapeHtml(authorName)}</div>
+                        <div class="author-stats">
+                            ${postCount}件の投稿 · ${totalComments}コメント · ${totalLikes}いいね
+                        </div>
+                    </div>
+                </div>
+                <div class="author-posts-list">
+                    ${recentPosts.map(post => {
+                        const date = new Date(post.createdAt);
+                        const shortDate = `${date.getMonth() + 1}/${date.getDate()}`;
+                        return `
+                            <div class="author-post-item" onclick="app.goDetail('${post.id}')">
+                                <div class="author-post-title">${this.escapeHtml(post.title)}</div>
+                                <div class="author-post-date">${shortDate}</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+                ${hasMore ? `<div class="author-show-more" onclick="app.filterByAuthor('${this.escapeHtml(authorName)}')">他${postCount - 3}件を見る →</div>` : ''}
+            `;
+
+            container.appendChild(card);
+        });
+
+        if (sortedAuthors.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">投稿者がまだいません</p>';
+        }
+    },
+
+    // 時間差を人間が読める形式に
+    getTimeAgo(date) {
+        const now = new Date();
+        const diff = now - date;
+        const minutes = Math.floor(diff / 60000);
+        const hours = Math.floor(diff / 3600000);
+        const days = Math.floor(diff / 86400000);
+
+        if (minutes < 1) return 'たった今';
+        if (minutes < 60) return `${minutes}分前`;
+        if (hours < 24) return `${hours}時間前`;
+        if (days < 7) return `${days}日前`;
+        return this.formatDate(date);
     },
 
     // ホームページレンダリング
@@ -171,6 +387,7 @@ const app = {
                     <div class="post-stats">
                         <span>💬 ${post.comments ? post.comments.length : 0}</span>
                         <span id="like-count-${post.id}">❤️ ${this.likes[post.id] || 0}</span>
+                        <span>👁️ ${this.views[post.id] || 0}</span>
                     </div>
                 </div>
             `;
@@ -283,6 +500,10 @@ const app = {
         document.getElementById('detailAuthor').textContent = post.name;
         document.getElementById('detailDate').textContent = formattedDate;
         document.getElementById('detailBody').textContent = post.body;
+        
+        // 閲覧数表示
+        const viewCount = this.views[post.id] || 0;
+        document.getElementById('detailViews').textContent = `👁️ ${viewCount}回閲覧`;
 
         const likeBtn = document.getElementById('likeBtn');
         if (this.likes[post.id]) {
@@ -394,7 +615,6 @@ const app = {
                         body,
                         updatedAt: new Date().toISOString()
                     };
-                    // database.ref → this.db.ref に変更
                     await this.db.ref('posts/' + this.currentEditId).set(updatedPost);
                     this.showToast('投稿を更新しました', 'success');
                 }
@@ -408,7 +628,6 @@ const app = {
                     updatedAt: new Date().toISOString(),
                     comments: []
                 };
-                // database.ref → this.db.ref に変更
                 await this.db.ref('posts/' + newPost.id).set(newPost);
                 this.showToast('投稿を保存しました', 'success');
             }
@@ -442,7 +661,7 @@ const app = {
         this.pageNumber = 1;
         document.getElementById('searchInput').value = '';
         document.getElementById('filterAuthorBtn').style.display = 'inline-block';
-        this.renderHome();
+        this.goHome();
     },
 
     // フィルタクリア
@@ -487,9 +706,9 @@ const app = {
     // 削除確認
     async confirmDelete() {
         try {
-            // database.ref → this.db.ref に変更
             await this.db.ref('posts/' + this.currentPostId).remove();
             await this.db.ref('likes/' + this.currentPostId).remove();
+            await this.db.ref('views/' + this.currentPostId).remove();
             this.closeModal();
             this.showToast('投稿を削除しました', 'success');
             this.goHome();
@@ -511,10 +730,8 @@ const app = {
             const newLikes = currentLikes > 0 ? 0 : 1;
             
             if (newLikes > 0) {
-                // database.ref → this.db.ref に変更
                 await this.db.ref('likes/' + this.currentPostId).set(newLikes);
             } else {
-                // database.ref → this.db.ref に変更
                 await this.db.ref('likes/' + this.currentPostId).remove();
             }
         } catch (error) {
@@ -547,7 +764,6 @@ const app = {
                 createdAt: new Date().toISOString()
             });
 
-            // database.ref → this.db.ref に変更
             await this.db.ref('posts/' + this.currentPostId + '/comments').set(comments);
             
             nameInput.value = '';
@@ -567,7 +783,6 @@ const app = {
                 try {
                     const comments = [...post.comments];
                     comments.splice(index, 1);
-                    // database.ref → this.db.ref に変更
                     await this.db.ref('posts/' + postId + '/comments').set(comments);
                     this.showToast('コメントを削除しました', 'success');
                 } catch (error) {
@@ -598,58 +813,4 @@ const app = {
         const hours = String(date.getHours()).padStart(2, '0');
         const minutes = String(date.getMinutes()).padStart(2, '0');
         return `${year}-${month}-${day} ${hours}:${minutes}`;
-    },
-
-    // HTML エスケープ
-    escapeHtml(text) {
-        const map = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;'
-        };
-        return text.replace(/[&<>"']/g, m => map[m]);
-    },
-
-    // データ読み込み（Firebase）
-    async loadData() {
-        try {
-            // 投稿読み込み (database.ref → this.db.ref に変更)
-            const postsSnapshot = await this.db.ref('posts').once('value');
-            const posts = [];
-            postsSnapshot.forEach((childSnapshot) => {
-                posts.push(childSnapshot.val());
-            });
-            posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            this.data.posts = posts;
-
-            // いいね読み込み (database.ref → this.db.ref に変更)
-            const likesSnapshot = await this.db.ref('likes').once('value');
-            this.likes = likesSnapshot.val() || {};
-        } catch (error) {
-            console.error('データ読み込みエラー:', error);
-            this.showToast('データの読み込みに失敗しました', 'error');
-        }
-    },
-
-    // テーマ管理
-    loadTheme() {
-        const theme = localStorage.getItem('learningAppTheme') || 'light';
-        if (theme === 'dark') {
-            document.body.classList.add('dark-mode');
-            const toggle = document.querySelector('.theme-toggle');
-            if (toggle) toggle.textContent = '☀️';
-        }
-    },
-
-    toggleTheme() {
-        document.body.classList.toggle('dark-mode');
-        const isDark = document.body.classList.contains('dark-mode');
-        localStorage.setItem('learningAppTheme', isDark ? 'dark' : 'light');
-        document.querySelector('.theme-toggle').textContent = isDark ? '☀️' : '🌙';
-    }
-};
-
-// アプリ起動
-document.addEventListener('DOMContentLoaded', () => app.init());
+    
